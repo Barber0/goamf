@@ -55,7 +55,7 @@ func (decoder *Decoder) getField(key string, t reflect.Type) (reflect.StructFiel
 }
 
 func (decoder *Decoder) decode(value reflect.Value) error {
-	
+
 	marker, err := decoder.readMarker()
 	if err != nil {
 		return err
@@ -75,7 +75,7 @@ func (decoder *Decoder) decode(value reflect.Value) error {
 			return errors.New("invalid type:" + value.Type().String() + " for nil")
 		}
 	}
-	
+
 	if value.Kind() == reflect.Interface {
 		v := reflect.ValueOf(value.Interface())
 		if v.Kind() == reflect.Ptr {
@@ -90,7 +90,7 @@ func (decoder *Decoder) decode(value reflect.Value) error {
 		}
 		value = value.Elem()
 	}
-	
+
 	switch marker {
 	case FALSE_MARKER:
 		return decoder.setBool(value, false)
@@ -188,21 +188,23 @@ func (decoder *Decoder) readString(value reflect.Value) error {
 
 		ret = string(bytes)
 	}
-	
+
 	if ret != "" {
 		decoder.stringCache = append(decoder.stringCache, ret)
 	}
 
 	switch value.Kind() {
 	case reflect.Int, reflect.Int32, reflect.Int64:
-		num, err := strconv.Atoi64(ret)
+		num, err := strconv.ParseInt(ret, 10, 64)
+		// num, err := strconv.Atoi64(ret)
 		if err != nil {
 			return err
 		}
 
 		value.SetInt(num)
 	case reflect.Uint, reflect.Uint32, reflect.Uint64:
-		num, err := strconv.Atoui64(ret)
+		num, err := strconv.ParseUint(ret, 10, 64)
+		// num, err := strconv.Atoui64(ret)
 		if err != nil {
 			return err
 		}
@@ -257,7 +259,7 @@ func (decoder *Decoder) readObject(value reflect.Value) error {
 			value.Set(v)
 			value = v
 		}
-		
+
 		decoder.objectCache = append(decoder.objectCache, value)
 
 		for {
@@ -266,7 +268,6 @@ func (decoder *Decoder) readObject(value reflect.Value) error {
 			if err != nil {
 				return err
 			}
-			
 
 			if key == "" {
 				break
@@ -280,25 +281,24 @@ func (decoder *Decoder) readObject(value reflect.Value) error {
 
 			value.SetMapIndex(reflect.ValueOf(key), v.Elem())
 		}
-		
+
 		return nil
 	}
 
 	if value.Kind() != reflect.Struct {
 		return errors.New("struct type expected, found:" + value.Type().String())
 	}
-	
 
 	decoder.objectCache = append(decoder.objectCache, value)
 
 	for {
-	
+
 		key := ""
 		err = decoder.readString(reflect.ValueOf(&key).Elem())
 		if err != nil {
 			return err
 		}
-		
+
 		if key == "" {
 			break
 		}
@@ -307,13 +307,13 @@ func (decoder *Decoder) readObject(value reflect.Value) error {
 		if !ok {
 			return errors.New("key:" + key + " not found in struct:" + value.Type().String())
 		}
-		
+
 		err = decoder.decode(value.FieldByName(f.Name))
 		if err != nil {
 			return err
 		}
 	}
-	
+
 	return nil
 }
 
@@ -339,22 +339,22 @@ func (decoder *Decoder) readSlice(value reflect.Value) error {
 	if sep != 0x01 {
 		return errors.New("ecma array not allowed")
 	}
-	
+
 	if value.IsNil() {
 		var v reflect.Value
 		if value.Type().Kind() == reflect.Slice {
 			v = reflect.MakeSlice(value.Type(), int(index), int(index))
 		} else if value.Type().Kind() == reflect.Interface {
-			v = reflect.ValueOf(make([]AMFAny,int(index), int(index)))
+			v = reflect.ValueOf(make([]AMFAny, int(index), int(index)))
 		} else {
 			return errors.New("invalid type:" + value.Type().String() + " for array")
 		}
 		value.Set(v)
 		value = v
 	}
-	
+
 	decoder.objectCache = append(decoder.objectCache, value)
-	
+
 	for i := 0; i < int(index); i++ {
 		c := value.Index(i)
 		err = decoder.decode(c)
@@ -362,14 +362,14 @@ func (decoder *Decoder) readSlice(value reflect.Value) error {
 			return err
 		}
 	}
-	
+
 	return nil
 }
 
 func (decoder *Decoder) setBool(value reflect.Value, v bool) error {
 
 	switch value.Kind() {
-		case reflect.Bool:
+	case reflect.Bool:
 		value.SetBool(v)
 	case reflect.Interface:
 		value.Set(reflect.ValueOf(v))

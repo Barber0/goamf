@@ -19,7 +19,7 @@ type Encoder struct {
 	reservStruct bool
 }
 
-func (encoder *Encoder) Reset(){
+func (encoder *Encoder) Reset() {
 	encoder.objectCache = make(map[uintptr]int)
 	encoder.stringCache = make(map[string]int)
 }
@@ -67,7 +67,8 @@ func (encoder *Encoder) encodeUint(value uint64) error {
 			return encoder.encodeFloat(float64(value))
 		}
 
-		return encoder.encodeString(strconv.Uitoa64(value))
+		// return encoder.encodeString(strconv.Uitoa64(value))
+		return encoder.encodeString(strconv.FormatUint(value, 10))
 	}
 
 	err := encoder.writeMarker(INTEGER_MARKER)
@@ -84,7 +85,7 @@ func (encoder *Encoder) encodeInt(value int64) error {
 		if value > -0x7fffffff {
 			return encoder.encodeFloat(float64(value))
 		}
-		return encoder.encodeString(strconv.Itoa64(value))
+		return encoder.encodeString(strconv.FormatInt(value, 10))
 	}
 
 	err := encoder.writeMarker(INTEGER_MARKER)
